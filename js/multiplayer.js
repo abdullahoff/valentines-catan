@@ -4,17 +4,16 @@ let mpSocket = null;
 let mpRoomCode = null;
 let mpPlayerIdx = null;
 let mpMode = false;
+let mpIsHost = false;
+let mpLobbyState = null; // track server state while in lobby
 
 // Backend URL: auto-detect local dev vs deployed GitHub Pages
 const MP_BACKEND = (() => {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    return location.origin; // local dev — same origin
+    return location.origin;
   }
-  // When hosted on GitHub Pages, point to Render backend
-  // Replace this URL after deploying to Render
   return 'https://valentines-catan.onrender.com';
 })();
-
 const MP_WS = MP_BACKEND.replace(/^http/, 'ws');
 
 // ── lobby UI ──────────────────────────────────────────────────────────────
@@ -25,7 +24,12 @@ function showMultiplayerLobby() {
 }
 
 function backToTitle() {
+  if (mpSocket) { mpSocket.close(); mpSocket = null; }
   document.getElementById('mp-lobby').classList.add('hidden');
+  document.getElementById('mp-create-section').classList.remove('hidden');
+  document.getElementById('mp-join-section').classList.remove('hidden');
+  document.getElementById('mp-waiting').classList.add('hidden');
+  document.getElementById('mp-start-btn').classList.add('hidden');
   document.getElementById('title-screen').classList.remove('hidden');
 }
 
@@ -39,11 +43,10 @@ async function mpCreateRoom() {
       body: JSON.stringify({numPlayers})
     });
     const data = await res.json();
+    if (data.error) { alert(data.error); return; }
     mpRoomCode = data.roomCode;
-    document.getElementById('mp-room-display').textContent = mpRoomCode;
-    document.getElementById('mp-create-section').classList.add('hidden');
-    document.getElementById('mp-join-section').classList.add('hidden');
-    document.getElementById('mp-waiting').classList.remove('hidden');
+    mpIsHost = true;
+    _showWaiting();
     mpConnect(name);
   } catch (e) {
     alert('Failed to create room: ' + e.message);
@@ -55,11 +58,74 @@ function mpJoinRoom() {
   const name = document.getElementById('mp-name').value.trim() || 'Player';
   if (!code) return;
   mpRoomCode = code;
+  mpIsHost = false;
+  _showWaiting();
+  mpConnect(name);
+}
+
+function _showWaiting() {
   document.getElementById('mp-room-display').textContent = mpRoomCode;
   document.getElementById('mp-create-section').classList.add('hidden');
   document.getElementById('mp-join-section').classList.add('hidden');
   document.getElementById('mp-waiting').classList.remove('hidden');
-  mpConnect(name);
+}
+
+// ── lobby rendering ───────────────────────────────────────────────────────
+
+function mpRenderLobby(state) {
+  const container = document.getElementById('mp-player-slots');
+  const numHumans = state.numHumans || 1;
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const p = state.players[i];
+    const isMe = i === mpPlayerIdx;
+    const connected = p.connected;
+    const isAI = p.isAI;
+
+    let status, color, nameText;
+    if (isAI) {
+      status = '🤖 AI';
+      color = '#666';
+      nameText = p.name;
+    } else if (connected) {
+      status = '✅ Ready';
+      color = p.color;
+      nameText = p.name + (isMe ? ' (you)' : '');
+    } else {
+      status = '⏳ Waiting...';
+      color = '#444';
+      nameText = 'Open Slot';
+    }
+
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;margin:4px 0;border:1px solid ${color};border-radius:6px;background:${color}11">
+      <div>
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};margin-right:6px"></span>
+        <span style="color:#fff;font-size:10px">${nameText}</span>
+      </div>
+      <span style="font-size:8px;color:${color}">${status}</span>
+    </div>`;
+  }
+  container.innerHTML = html;
+
+  // lobby status + start button
+  const connectedHumans = state.players.filter(p => p.connected && !p.isAI).length;
+  const statusEl = document.getElementById('mp-lobby-status');
+  const startBtn = document.getElementById('mp-start-btn');
+
+  if (connectedHumans < numHumans) {
+    statusEl.textContent = `Waiting for players... (${connectedHumans}/${numHumans})`;
+    startBtn.classList.add('hidden');
+  } else if (mpIsHost) {
+    statusEl.textContent = `All players connected!`;
+    startBtn.classList.remove('hidden');
+  } else {
+    statusEl.textContent = `All players connected! Waiting for host to start...`;
+    startBtn.classList.add('hidden');
+  }
+}
+
+function mpStartGame() {
+  mpSend({action: 'start_game'});
 }
 
 // ── WebSocket ─────────────────────────────────────────────────────────────
@@ -78,23 +144,55 @@ function mpConnect(name) {
     if (msg.event === 'joined') {
       mpPlayerIdx = msg.playerIdx;
       mpMode = true;
-      mpApplyState(msg.state);
-      document.getElementById('mp-lobby').classList.add('hidden');
-      document.getElementById('hud').classList.remove('hidden');
-      gameStarted = true;
-      mpUpdateUI();
+      mpLobbyState = msg.state;
+
+      if (msg.state.turnPhase === 'lobby') {
+        mpRenderLobby(msg.state);
+      } else {
+        _enterGame(msg.state);
+      }
     }
 
-    if (msg.event === 'state_update' || msg.event === 'player_joined' || msg.event === 'player_left') {
-      mpApplyState(msg.state);
-      if (msg.log) logMsg(msg.log);
-      mpUpdateUI();
+    if (msg.event === 'player_joined' || msg.event === 'player_left') {
+      mpLobbyState = msg.state;
+      if (msg.state.turnPhase === 'lobby') {
+        mpRenderLobby(msg.state);
+      }
+    }
+
+    if (msg.event === 'state_update') {
+      if (msg.state.turnPhase === 'lobby') {
+        mpLobbyState = msg.state;
+        mpRenderLobby(msg.state);
+      } else {
+        // game has started (or is in progress)
+        if (!gameStarted) {
+          _enterGame(msg.state);
+        } else {
+          mpApplyState(msg.state);
+          if (msg.log) logMsg(msg.log);
+          mpUpdateUI();
+        }
+      }
     }
   };
 
   mpSocket.onclose = () => {
-    if (mpMode && turnPhase !== 'gameover') logMsg('Disconnected from server.');
+    if (mpMode && gameStarted && turnPhase !== 'gameover') logMsg('Disconnected from server.');
   };
+}
+
+function _enterGame(state) {
+  document.getElementById('mp-lobby').classList.add('hidden');
+  document.getElementById('mp-waiting').classList.add('hidden');
+  mpApplyState(state);
+  // init board rendering
+  buildBoard = function(){}; // prevent re-building board since we got it from server
+  resizeCanvas();
+  document.getElementById('hud').classList.remove('hidden');
+  gameStarted = true;
+  mpUpdateUI();
+  logMsg('Game started! ' + players[state.currentPlayer].name + ' goes first.');
 }
 
 function mpSend(data) {
@@ -132,7 +230,6 @@ function mpApplyState(s) {
     }));
     vertices = s.board.vertices.map(v => ({
       id: v.id, hexIds: [...v.hexIds], adjVertexIds: [...v.adjVertexIds], adjEdgeIds: [...v.adjEdgeIds],
-      // compute refX/refY from hex positions (same as board.js)
       refX: 0, refY: 0, x: 0, y: 0
     }));
     edges = s.board.edges.map(e => ({
@@ -141,7 +238,6 @@ function mpApplyState(s) {
     ports = (s.board.ports || []).map(p => ({
       edgeId: p.edgeId, vertices: [...p.vertices], type: p.type, ratio: p.ratio
     }));
-    // recompute vertex reference positions from hex data
     _mpComputeRefPositions();
     resizeCanvas();
   }
@@ -175,7 +271,6 @@ function mpApplyState(s) {
 }
 
 function _mpComputeRefPositions() {
-  // Rebuild vertex refX/refY from hex geometry (mirrors board.js logic)
   const hexW = Math.sqrt(3) * 100;
   const vMap = new Map();
   for (const h of hexes) {
@@ -198,7 +293,6 @@ function _mpComputeRefPositions() {
 function mpUpdateUI() {
   updateUI();
 
-  // In multiplayer, show whose turn it is and disable controls if not our turn
   const isMyTurn = currentPlayer === mpPlayerIdx;
   const hm = isMyTurn && turnPhase === 'main';
 
@@ -211,7 +305,7 @@ function mpUpdateUI() {
   document.getElementById('btn-trade').disabled = !hm;
   document.getElementById('btn-endturn').disabled = !hm;
 
-  // Show resources for our player, not always player 0
+  // Show resources for our player
   const rs = document.getElementById('res-section');
   rs.innerHTML = '';
   for (let r of RES) {
@@ -245,12 +339,10 @@ function buyDevCard() {
   if (_origBuyDevCard) _origBuyDevCard();
 }
 
-// For multiplayer click handling, we intercept the canvas click
 function mpHandleClick(mx, my) {
   if (!mpMode) return false;
-  if (currentPlayer !== mpPlayerIdx) return true; // swallow click, not our turn
+  if (currentPlayer !== mpPlayerIdx) return true;
 
-  // Robber placement
   if (turnPhase === 'robber') {
     for (let h of hexes) {
       const dx = mx - h.cx, dy = my - h.cy;
@@ -262,7 +354,6 @@ function mpHandleClick(mx, my) {
     return true;
   }
 
-  // Setup settlement
   if (turnPhase === 'setup_settle') {
     for (let i = 0; i < vertices.length; i++) {
       const dx = mx - vertices[i].x, dy = my - vertices[i].y;
@@ -274,7 +365,6 @@ function mpHandleClick(mx, my) {
     return true;
   }
 
-  // Setup road
   if (turnPhase === 'setup_road') {
     for (let i = 0; i < edges.length; i++) {
       const dx = mx - edges[i].mx, dy = my - edges[i].my;
@@ -286,7 +376,6 @@ function mpHandleClick(mx, my) {
     return true;
   }
 
-  // Building placement
   if (buildMode === 'settlement' || buildMode === 'city') {
     for (let vIdx of validPositions) {
       const dx = mx - vertices[vIdx].x, dy = my - vertices[vIdx].y;
@@ -312,7 +401,6 @@ function mpHandleClick(mx, my) {
   return false;
 }
 
-// Override trade to send via WS
 function mpDoTrade(giveRes, getRes) {
   mpSend({action: 'trade', give: giveRes, get: getRes});
 }

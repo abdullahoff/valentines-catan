@@ -49,9 +49,13 @@
     </div>
     <div id="mp-waiting" class="hidden" style="margin-top:20px">
       <p style="color:#ffd700;font-size:12px">Room Code:</p>
-      <p id="mp-room-display" style="color:#fff;font-size:24px;letter-spacing:6px;font-weight:bold"></p>
-      <p style="color:#ff6b9d;font-size:9px;margin-top:8px">Share this code with your friends!</p>
-      <p style="color:#666;font-size:8px;margin-top:4px">Waiting for connection...</p>
+      <p id="mp-room-display" style="color:#fff;font-size:28px;letter-spacing:8px;font-weight:bold;margin:4px 0"></p>
+      <p style="color:#ff6b9d;font-size:9px">Share this code with your friends!</p>
+
+      <div id="mp-player-slots" style="margin:16px auto;max-width:260px;text-align:left"></div>
+
+      <p id="mp-lobby-status" style="color:#666;font-size:9px;margin-top:8px"></p>
+      <button id="mp-start-btn" class="gbtn hidden" style="background:#ff4081;color:#fff;border-color:#ff80ab;font-size:11px;padding:10px 24px;margin-top:10px" onclick="mpStartGame()">Start Game</button>
     </div>
     <button class="gbtn" style="background:#666;color:#fff;border-color:#999;font-size:9px;padding:6px 14px;margin-top:16px" onclick="backToTitle()">Back</button>
   </div>

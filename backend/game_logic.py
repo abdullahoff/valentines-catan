@@ -194,7 +194,7 @@ def new_game(num_humans: int = 1) -> dict:
         "devDeck": deck,
         "bank": {r: BANK_SIZE for r in RES},
         "currentPlayer": 0,
-        "turnPhase": "setup_settle",
+        "turnPhase": "lobby",
         "setupRound": 1,
         "setupOrder": [0, 1, 2, 3],
         "setupIdx": 0,
@@ -204,12 +204,18 @@ def new_game(num_humans: int = 1) -> dict:
         "largestArmyPlayer": -1,
         "largestArmyCount": 0,
         "devCardPlayedThisTurn": False,
+        "hostPlayer": 0,
+        "numHumans": num_humans,
     }
     return state
 
 # ── action handler ─────────────────────────────────────────────────────────
 
 def handle(state: dict, action: str, data: dict, player_idx: int | None) -> dict:
+    # lobby actions don't need turn check
+    if action == "start_game":
+        return _handle_start_game(state, player_idx)
+
     cp = state["currentPlayer"]
     if player_idx is not None and player_idx != cp and action not in ("discard",):
         return {"error": "Not your turn"}
@@ -237,6 +243,19 @@ def handle(state: dict, action: str, data: dict, player_idx: int | None) -> dict
     return {"error": "Unknown action"}
 
 # ── setup ──────────────────────────────────────────────────────────────────
+
+def _handle_start_game(state: dict, player_idx: int | None) -> dict:
+    if state["turnPhase"] != "lobby":
+        return {"error": "Game already started"}
+    if player_idx != state.get("hostPlayer", 0):
+        return {"error": "Only the host can start the game"}
+    # check all human slots are filled
+    num_needed = state.get("numHumans", 1)
+    connected = sum(1 for p in state["players"] if p["connected"] and not p["isAI"])
+    if connected < num_needed:
+        return {"error": f"Waiting for {num_needed - connected} more player(s)"}
+    state["turnPhase"] = "setup_settle"
+    return {"log": "Game started!"}
 
 def _handle_setup(state: dict, data: dict, pidx: int | None) -> dict:
     phase = state["turnPhase"]

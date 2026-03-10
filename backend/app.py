@@ -135,7 +135,7 @@ async def ws_endpoint(ws: WebSocket, room_code: str):
             # -- game actions -----------------------------------------------
             elif action in ("roll", "build", "buy_devcard", "play_devcard",
                             "trade", "end_turn", "move_robber", "steal",
-                            "discard", "place_setup"):
+                            "discard", "place_setup", "start_game"):
                 row = db.get_room(room_code)
                 if row is None:
                     continue
