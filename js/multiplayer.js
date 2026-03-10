@@ -12,7 +12,7 @@ const MP_BACKEND = (() => {
   }
   // When hosted on GitHub Pages, point to Render backend
   // Replace this URL after deploying to Render
-  return 'https://valentines-catan-api.onrender.com';
+  return 'https://valentines-catan.onrender.com';
 })();
 
 const MP_WS = MP_BACKEND.replace(/^http/, 'ws');

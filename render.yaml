@@ -5,4 +5,4 @@ services:
     plan: free
     envVars:
       - key: ALLOWED_ORIGINS
-        value: https://abdullahoff.github.io,http://localhost:8000
+        value: https://abdullahoff.github.io,http://localhost:8000,https://valentines-catan.onrender.com
