@@ -18,7 +18,43 @@
     <button class="gbtn" id="yes-btn" onclick="acceptQuest()">Yes!</button>
     <button class="gbtn" id="no-btn" onclick="declineQuest()">No</button>
   </div>
+  <div id="mp-btn-box" class="btn-box" style="display:none;margin-top:12px">
+    <button class="gbtn" style="background:#9c27b0;border-color:#ce93d8;color:#fff;font-size:9px;padding:8px 16px" onclick="showMultiplayerLobby()">Play with Friends</button>
+  </div>
   <div id="no-msg"></div>
+</div>
+
+<!-- Multiplayer Lobby -->
+<div id="mp-lobby" class="screen hidden">
+  <h1 style="font-size:clamp(14px,2.5vw,24px);color:#ffd700">MULTIPLAYER</h1>
+  <div style="margin:16px auto;max-width:320px;text-align:center">
+    <div style="margin-bottom:12px">
+      <label style="color:#ff6b9d;font-size:10px">Your Name</label><br>
+      <input id="mp-name" type="text" placeholder="Noor" maxlength="20" style="background:#1a0a2e;border:1px solid #ff6b9d;color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;width:180px;text-align:center;margin-top:4px">
+    </div>
+    <div id="mp-create-section" style="margin-bottom:16px">
+      <label style="color:#ff6b9d;font-size:10px">Human Players</label><br>
+      <select id="mp-num-players" style="background:#1a0a2e;border:1px solid #ff6b9d;color:#fff;padding:4px 8px;border-radius:6px;font-size:10px;margin:4px 0 8px">
+        <option value="2">2 (+ 2 AI)</option>
+        <option value="3">3 (+ 1 AI)</option>
+        <option value="4">4 (no AI)</option>
+      </select><br>
+      <button class="gbtn" style="background:#ff4081;color:#fff;border-color:#ff80ab;font-size:10px;padding:8px 20px" onclick="mpCreateRoom()">Create Room</button>
+    </div>
+    <div id="mp-join-section">
+      <p style="color:#666;font-size:9px;margin:8px 0">— or join a friend's room —</p>
+      <input id="mp-code-input" type="text" placeholder="ROOM CODE" maxlength="5" style="background:#1a0a2e;border:1px solid #ffd700;color:#ffd700;padding:6px 10px;border-radius:6px;font-size:13px;width:120px;text-align:center;text-transform:uppercase;letter-spacing:3px">
+      <br>
+      <button class="gbtn" style="background:#ffd700;color:#1a0a2e;border-color:#ffeb3b;font-size:10px;padding:8px 20px;margin-top:8px" onclick="mpJoinRoom()">Join</button>
+    </div>
+    <div id="mp-waiting" class="hidden" style="margin-top:20px">
+      <p style="color:#ffd700;font-size:12px">Room Code:</p>
+      <p id="mp-room-display" style="color:#fff;font-size:24px;letter-spacing:6px;font-weight:bold"></p>
+      <p style="color:#ff6b9d;font-size:9px;margin-top:8px">Share this code with your friends!</p>
+      <p style="color:#666;font-size:8px;margin-top:4px">Waiting for connection...</p>
+    </div>
+    <button class="gbtn" style="background:#666;color:#fff;border-color:#999;font-size:9px;padding:6px 14px;margin-top:16px" onclick="backToTitle()">Back</button>
+  </div>
 </div>
 
 <!-- HUD -->
@@ -167,6 +203,7 @@
 <script src="js/ui.js"></script>
 <script src="js/prizes.js"></script>
 <script src="js/title.js"></script>
+<script src="js/multiplayer.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

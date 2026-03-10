@@ -65,7 +65,21 @@ function declineQuest() {
 }
 
 function acceptQuest() {
-  document.getElementById('title-screen').classList.add('hidden');
   stopConfetti();
+  // Show solo vs multiplayer choice
+  document.getElementById('btn-box').style.display = 'none';
+  document.getElementById('no-msg').textContent = '';
+  const mpBox = document.getElementById('mp-btn-box');
+  mpBox.style.display = 'flex';
+  // Replace title subtitle
+  document.querySelector('#title-screen h2').textContent = 'How do you want to play?';
+  // Add solo button
+  mpBox.innerHTML =
+    '<button class="gbtn" style="background:#ff4081;color:#fff;border-color:#ff80ab;font-size:10px;padding:10px 20px" onclick="startSolo()">Play Solo</button>' +
+    '<button class="gbtn" style="background:#9c27b0;color:#fff;border-color:#ce93d8;font-size:10px;padding:10px 20px" onclick="showMultiplayerLobby()">Play with Friends</button>';
+}
+
+function startSolo() {
+  document.getElementById('title-screen').classList.add('hidden');
   initGame();
 }

@@ -260,20 +260,20 @@ function stealFrom(pid) {
 
 // ===== BUILDING =====
 function startBuild(type) {
-  if (turnPhase !== 'main' || currentPlayer !== 0) return;
+  const myIdx = mpMode ? mpPlayerIdx : 0;
+  if (turnPhase !== 'main' || currentPlayer !== myIdx) return;
   if (buildMode === type) { buildMode = null; validPositions = []; updateUI(); return; }
   const costKey = type === 'city' ? 'city' : type === 'settlement' ? 'settlement' : 'road';
-  if (!canAfford(players[0], COSTS[costKey])) return;
+  if (!canAfford(players[myIdx], COSTS[costKey])) return;
 
-  // Check piece limits
-  if (type === 'road' && players[0].roadsLeft <= 0) return;
-  if (type === 'settlement' && players[0].settlementsLeft <= 0) return;
-  if (type === 'city' && players[0].citiesLeft <= 0) return;
+  if (type === 'road' && players[myIdx].roadsLeft <= 0) return;
+  if (type === 'settlement' && players[myIdx].settlementsLeft <= 0) return;
+  if (type === 'city' && players[myIdx].citiesLeft <= 0) return;
 
   buildMode = type;
-  if (type === 'settlement') validPositions = getValidSettlements(0);
-  else if (type === 'city') validPositions = getValidCities(0);
-  else validPositions = getValidRoads(0);
+  if (type === 'settlement') validPositions = getValidSettlements(myIdx);
+  else if (type === 'city') validPositions = getValidCities(myIdx);
+  else validPositions = getValidRoads(myIdx);
   updateUI();
 }
 

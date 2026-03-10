@@ -10,6 +10,12 @@ document.getElementById('board-canvas').addEventListener('click', e => {
   if (!gameStarted || turnPhase === 'gameover') return;
   const mx = e.clientX, my = e.clientY;
 
+  // Multiplayer: route clicks through WebSocket
+  if (mpMode) {
+    mpHandleClick(mx, my);
+    return;
+  }
+
   // Robber placement
   if (turnPhase === 'robber' && currentPlayer === 0) {
     for (let h of hexes) {
