@@ -1,16 +1,14 @@
 # Valentine's Catan 💕
 
-A Valentine's Day themed Catan game built for Noor. Play as Noor against three AI opponents (Abdullah, Dequavious, and Jay Quellin) on a love-themed board where you collect Chocolates, Roses, Teddy Bears, Love Letters, and Diamonds to build Date Spots and Dream Homes.
+A Valentine's Day themed Catan game I built for fun. Play it here: **[abdullahoff.github.io/valentines-catan](https://abdullahoff.github.io/valentines-catan/)**
 
-Win the game and earn Love Points to spend in the Prize Shop!
+<img width="800" alt="Valentine's Catan gameplay" src="https://github.com/user-attachments/assets/placeholder-screenshot.png" />
 
-## How to Play
+> This is a side project I tinker with here and there. It started as a Valentine's gift and turned into a full Catan engine with AI, multiplayer, and a prize shop.
 
-Open `index.html` in a browser. That's it — no build step, no dependencies.
+## What is this
 
-### Game Rules
-
-Standard Catan rules with a Valentine's twist:
+A complete Settlers of Catan implementation with a Valentine's Day twist. Everything is renamed to fit the theme:
 
 | Catan | Valentine's Catan |
 |-------|-------------------|
@@ -25,47 +23,28 @@ Standard Catan rules with a Valentine's twist:
 | Robber | Anti-Cupid |
 | Knight | Cupid's Arrow |
 
-First to 10 Victory Points wins. Your VP converts to Love Points for the Prize Shop where you can claim real prizes.
-
 ## Features
 
-- Full Catan game engine with all standard rules
-- Strategic AI opponents with smart placement, trading, and dev card play
-- Hex board with randomized tiles, number tokens, and 6/8 adjacency enforcement
-- Port trading system (3:1 generic, 2:1 specialty)
-- Dev cards: Knights, Road Building, Year of Plenty, Monopoly, VP cards
-- Longest Road and Largest Army tracking
-- Prize Shop with redeemable rewards
-- Canvas-based rendering with confetti effects
-- Fully responsive — works on desktop and mobile
+- Full Catan rules — hex board, resource production, building, dev cards, trading, robber, ports
+- 3 AI opponents with strategic placement, trading, and dev card play
+- Multiplayer — create a room, share the code, play with friends
+- Prize Shop — win Love Points and redeem real prizes
+- Canvas rendering with confetti effects
+- Works on desktop and mobile
 
 ## Multiplayer
 
-FastAPI backend with WebSocket support so Noor can play with friends. Game state persisted in SQLite.
-
-### Setup
+The game has a FastAPI backend with WebSocket support so you can play with friends instead of AI.
 
 ```bash
 pip install -r requirements.txt
 uvicorn backend.app:app --reload
 ```
 
-Open `http://localhost:8000` in your browser. Create a room, share the 5-letter code with friends, and they join from their browser.
-
-### How it works
-
-- Server owns the game state (no cheating!)
-- WebSocket pushes real-time updates to all players
-- SQLite persists games across server restarts
-- Empty player slots are filled by AI
-
-### API
-
-- `POST /api/rooms` — create a new game room (body: `{"numPlayers": 2}`)
-- `GET /api/rooms/{code}` — get room state
-- `WS /ws/{code}` — WebSocket for real-time play
+Or just play online — the backend is deployed on Render and the frontend auto-connects.
 
 ## Tech
 
-- Frontend: Vanilla JavaScript, HTML5 Canvas, CSS
+- Frontend: Vanilla JS, HTML5 Canvas, CSS — no frameworks, no build step
 - Backend: Python, FastAPI, WebSockets, SQLite
+- Hosting: GitHub Pages (frontend) + Render (backend)
