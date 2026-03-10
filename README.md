@@ -2,7 +2,8 @@
 
 A Valentine's Day themed Catan game I built for fun. Play it here: **[abdullahoff.github.io/valentines-catan](https://abdullahoff.github.io/valentines-catan/)**
 
-<img width="800" alt="Valentine's Catan gameplay" src="https://github.com/user-attachments/assets/placeholder-screenshot.png" />
+<img width="1723" height="982" alt="image" src="https://github.com/user-attachments/assets/5e0d46d9-2f16-4a7b-92b7-6997f727a707" />
+
 
 > This is a side project I tinker with here and there. It started as a Valentine's gift and turned into a full Catan engine with AI, multiplayer, and a prize shop.
 
