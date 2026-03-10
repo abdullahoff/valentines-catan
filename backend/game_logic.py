@@ -588,19 +588,25 @@ def ai_turn(state: dict):
         if state["turnPhase"] != "main":
             return
 
-    # main phase — build what we can
+    # main phase — trade and build
     if state["turnPhase"] == "main":
         for _ in range(10):
             built = False
+            # Trade toward builds first
+            _ai_trade_loop(state, cp)
+
             if _can_afford(p, COSTS["city"]) and p["citiesLeft"] > 0:
                 vc = _valid_cities(state, cp)
                 if vc:
-                    _handle_build(state, {"type": "city", "index": vc[0]})
+                    # pick city with best production
+                    best = max(vc, key=lambda v: sum(_pip(state["board"]["hexes"][h]["number"]) for h in state["board"]["vertices"][v]["hexIds"] if state["board"]["hexes"][h]["type"] != "desert"))
+                    _handle_build(state, {"type": "city", "index": best})
                     built = True; continue
             if _can_afford(p, COSTS["settlement"]) and p["settlementsLeft"] > 0:
                 vs = _valid_settlements(state, cp)
                 if vs:
-                    _handle_build(state, {"type": "settlement", "index": vs[0]})
+                    best = max(vs, key=lambda v: sum(_pip(state["board"]["hexes"][h]["number"]) for h in state["board"]["vertices"][v]["hexIds"] if state["board"]["hexes"][h]["type"] != "desert"))
+                    _handle_build(state, {"type": "settlement", "index": best})
                     built = True; continue
             if _can_afford(p, COSTS["road"]) and p["roadsLeft"] > 0:
                 vr = _valid_roads(state, cp)
@@ -642,3 +648,43 @@ def _ai_discard(state: dict, pidx: int, count: int):
         r = random.choice(avail)
         p["res"][r] -= 1
         state["bank"][r] += 1
+
+
+def _ai_trade_loop(state: dict, pidx: int):
+    """AI trades with bank to work toward builds, up to 3 trades per turn."""
+    p = state["players"][pidx]
+    goals = []
+    if p["citiesLeft"] > 0 and _valid_cities(state, pidx):
+        goals.append(COSTS["city"])
+    if p["settlementsLeft"] > 0 and _valid_settlements(state, pidx):
+        goals.append(COSTS["settlement"])
+    if state["devDeck"]:
+        goals.append(COSTS["devcard"])
+    if p["roadsLeft"] > 0 and _valid_roads(state, pidx):
+        goals.append(COSTS["road"])
+
+    for _ in range(3):
+        traded = False
+        for target in goals:
+            for need in RES:
+                if p["res"].get(need, 0) >= target.get(need, 0):
+                    continue
+                # find a resource we have surplus of
+                for give in RES:
+                    if give == need:
+                        continue
+                    ratio = _trade_ratio(state, pidx, give)
+                    surplus = p["res"].get(give, 0) - target.get(give, 0)
+                    if surplus >= ratio:
+                        p["res"][give] -= ratio
+                        state["bank"][give] += ratio
+                        taken = _bank_take(state, need, 1)
+                        p["res"][need] += taken
+                        traded = True
+                        break
+                if traded:
+                    break
+            if traded:
+                break
+        if not traded:
+            break
